@@ -1,0 +1,43 @@
+{
+  "name": "local-request-list-entities-vue",
+  "version": "1.0.0",
+  "description": "provides a simple class to allow searching and deleting entities stored in memory by the \"list-entities-vue\" package",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "babel src -d dist && node dist/index.js",
+    "build": "babel src -d dist",
+    "lint": "eslint src --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emanuelmoraes-dev/local-request-list-entities-vue.git"
+  },
+  "keywords": [
+    "local-request",
+    "request",
+    "local",
+    "list-entities-vue",
+    "list-entities"
+  ],
+  "author": "emanuelmoraes-dev",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/emanuelmoraes-dev/local-request-list-entities-vue/issues"
+  },
+  "homepage": "https://github.com/emanuelmoraes-dev/local-request-list-entities-vue#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.7.5",
+    "@babel/core": "^7.7.5",
+    "@babel/plugin-transform-async-to-generator": "^7.7.4",
+    "@babel/preset-env": "^7.7.5",
+    "eslint": "^6.7.2",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1"
+  },
+  "dependencies": {
+    "@babel/polyfill": "^7.7.0"
+  }
+}
