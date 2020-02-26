@@ -458,7 +458,7 @@ function () {
         try {
           for (var _iterator = obj[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
             var v = _step.value;
-            rt.push(getAttr(pathAttr, v, searchArray));
+            rt.push(this._getAttr(pathAttr, v, searchArray));
           }
         } catch (err) {
           _didIteratorError = true;
@@ -494,7 +494,7 @@ function () {
             for (var _iterator2 = value[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
               var _v = _step2.value;
 
-              _rt.push(getAttr(pathRemaning, _v, searchArray));
+              _rt.push(this._getAttr(pathRemaning, _v, searchArray));
             }
           } catch (err) {
             _didIteratorError2 = true;
@@ -513,7 +513,7 @@ function () {
 
           return _rt;
         } else {
-          return getAttr(pathRemaning, value, searchArray);
+          return this._getAttr(pathRemaning, value, searchArray);
         }
       } else {
         var _value = obj[pathAttr];
