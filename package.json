@@ -1,6 +1,6 @@
 {
   "name": "local-request-list-entities-vue",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "provides a simple class to allow searching and deleting entities stored in memory by the \"list-entities-vue\" package",
   "main": "dist/index.js",
   "scripts": {
