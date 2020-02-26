@@ -4,6 +4,12 @@ require("core-js/modules/es6.promise.js");
 
 require("core-js/modules/es6.object.to-string.js");
 
+require("core-js/modules/es7.symbol.async-iterator.js");
+
+require("core-js/modules/es6.symbol.js");
+
+require("core-js/modules/web.dom.iterable.js");
+
 require("core-js/modules/es6.regexp.replace.js");
 
 require("core-js/modules/es6.object.is.js");
@@ -17,8 +23,6 @@ require("core-js/modules/es6.string.starts-with.js");
 require("core-js/modules/es6.regexp.split.js");
 
 require("core-js/modules/es6.regexp.match.js");
-
-require("core-js/modules/es6.function.name.js");
 
 require("core-js/modules/es6.array.sort.js");
 
@@ -256,9 +260,15 @@ function () {
         if (!valid) return false;
         if (param.operator === '$' && param.descriptor.type === String) param.operator = '$in';
         var attrValue;
-        if (param.attr === 'genres.name') attrValue = entity.genres.map(function (g) {
-          return g.name;
-        });else attrValue = entity[param.attr];
+
+        if (entity instanceof Array && param.attr.match(/\./)) {
+          var attr = param.attr.split('.').slice(1).join('.');
+          attrValue = entity.genres.map(function (g) {
+            return _this4._getAttr(attr, entity);
+          });
+        } else {
+          attrValue = entity[param.attr];
+        }
 
         if (param.descriptor.searchSepAnd && inputSearch.match(param.descriptor.searchSepAnd)) {
           var values = param.value.split(param.descriptor.searchSepAnd).map(function (value) {
@@ -393,6 +403,153 @@ function () {
     key: "_scape",
     value: function _scape(str) {
       return str.replace(/[.*+?^${}()|[]\]/g, '\$&');
+    }
+    /**
+     * NOT used by list-entities
+     * Gets the value of an object through its path
+     * @param {string} pathAttr - Attribute path containing desired value
+     * @param {Object} obj - Object containing desired attribute
+     * @param {boolean} [searchArray] - If true, the attributes that are array will recursively call this function at each value present in the array and throw the result of each position into another array that will be returned. If false, arrays are considered objects and their positions are considered attributes. Default value: false
+     * @returns {any} Value of an object through its path
+     *
+     * @example
+     * let obj = {
+     *     a: {
+     *         b: 1,
+     *         c: 2
+     *     },
+     *
+     *     b: [
+     *         { d: 3, e: 4 },
+     *         { d: 5, e: 6 },
+     *         { f: 7, g: 8, z: [{ info: '123' }] }
+     *     ]
+     * }
+     *
+     * _getAttr('a.b', obj) // 1
+     * _getAttr('a.c', obj) // 2
+     * _getAttr('b.2.f', obj) // 7
+     * _getAttr('b.2.g', obj) // 8
+     *
+     * _getAttr('b.d', obj, true) // [3,5,undefined]
+     * _getAttr('b.e', obj, true) // [4,6,undefined]
+     * _getAttr('b.z.info', obj, true) // [undefined, undefined, ['123']]
+     */
+
+  }, {
+    key: "_getAttr",
+    value: function _getAttr(pathAttr, obj) {
+      var searchArray = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+      if (!obj) {
+        return obj;
+      }
+
+      if (!pathAttr) {
+        return null;
+      }
+
+      if (searchArray && obj instanceof Array) {
+        var rt = [];
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = obj[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var v = _step.value;
+            rt.push(getAttr(pathAttr, v, searchArray));
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return != null) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+
+        return rt;
+      }
+
+      if (pathAttr.match(/\./)) {
+        var pathAttrArray = pathAttr.split('.');
+        var pathRemaning = pathAttrArray.slice(1).join('.');
+        var attr = pathAttrArray[0];
+        var value = obj[attr];
+
+        if (searchArray && value instanceof Array) {
+          var _rt = [];
+          var _iteratorNormalCompletion2 = true;
+          var _didIteratorError2 = false;
+          var _iteratorError2 = undefined;
+
+          try {
+            for (var _iterator2 = value[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+              var _v = _step2.value;
+
+              _rt.push(getAttr(pathRemaning, _v, searchArray));
+            }
+          } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+                _iterator2.return();
+              }
+            } finally {
+              if (_didIteratorError2) {
+                throw _iteratorError2;
+              }
+            }
+          }
+
+          return _rt;
+        } else {
+          return getAttr(pathRemaning, value, searchArray);
+        }
+      } else {
+        var _value = obj[pathAttr];
+
+        if (searchArray && _value instanceof Array) {
+          var _rt2 = [];
+          var _iteratorNormalCompletion3 = true;
+          var _didIteratorError3 = false;
+          var _iteratorError3 = undefined;
+
+          try {
+            for (var _iterator3 = _value[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+              var _v2 = _step3.value;
+
+              _rt2.push(_v2);
+            }
+          } catch (err) {
+            _didIteratorError3 = true;
+            _iteratorError3 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
+                _iterator3.return();
+              }
+            } finally {
+              if (_didIteratorError3) {
+                throw _iteratorError3;
+              }
+            }
+          }
+
+          return _rt2;
+        } else {
+          return _value;
+        }
+      }
     }
   }]);
 

@@ -1,10 +1,10 @@
 module.exports = class {
-	constructor (entities) {
+	constructor(entities) {
 		this._entities = entities
 	}
 
 	/** used by list-entities. Returns all entities with order and pagination */
-	async searchAll (page, pageSize, sort, inputSearch) {
+	async searchAll(page, pageSize, sort, inputSearch) {
 		this._orderBy(this._entities, sort)
 		const entities = this._paginate(this._entities, page, pageSize)
 		return {
@@ -14,7 +14,7 @@ module.exports = class {
 	}
 
 	/** used by list-entities. Returns entities filtered by a specific attribute */
-	async searchAttr (page, pageSize, sort, inputSearch, paramsRequest, params) {
+	async searchAttr(page, pageSize, sort, inputSearch, paramsRequest, params) {
 		params = params.slice()
 		params.push.apply(params, paramsRequest)
 		let entities = this._filter(this._entities, params, inputSearch)
@@ -27,7 +27,7 @@ module.exports = class {
 	}
 
 	/** used by list-entities. Returns filtered entities based on all attributes */
-	async searchDefault (page, pageSize, sort, inputSearch, paramsRequest, params) {
+	async searchDefault(page, pageSize, sort, inputSearch, paramsRequest, params) {
 		let entities = this._filter(this._entities, paramsRequest, inputSearch)
 		entities = this._filterOr(entities, params, inputSearch)
 		this._orderBy(entities, sort)
@@ -39,12 +39,12 @@ module.exports = class {
 	}
 
 	/** used by list-entities. Remove a specific entity */
-	async delete (id, entity, index, entities) {
+	async delete(id, entity, index, entities) {
 		this._entities.splice(index, 1)
 	}
 
 	/** NOT used by list-entities. Sort a entity list by an attribute (+${attr} or -${attr}) */
-	_orderBy (entities, sort) {
+	_orderBy(entities, sort) {
 		let signal
 		let attr
 
@@ -65,22 +65,22 @@ module.exports = class {
 	}
 
 	/** NOT used by list-entities. Returns a list of entities on the correct page */
-	_paginate (entities, page, pageSize) {
+	_paginate(entities, page, pageSize) {
 		return entities.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize)
 	}
 
 	/** NOT used by list-entities. Search for entities that match user filters */
-	_filter (entities, params, inputSearch) {
+	_filter(entities, params, inputSearch) {
 		return entities.filter(entity => this._entityVerify(entity, params, inputSearch))
 	}
 
 	/** NOT used by list-entities. Search for entities that match any of the filters */
-	_filterOr (entities, params, inputSearch) {
+	_filterOr(entities, params, inputSearch) {
 		return entities.filter(entity => this._entityVerifyOr(entity, params, inputSearch))
 	}
 
 	/** NOT used by list-entities. Returns true if the entity matches any of the filters */
-	_entityVerifyOr (entity, params, inputSearch) {
+	_entityVerifyOr(entity, params, inputSearch) {
 		return params.reduce((valid, and) => {
 			if (valid) return true
 			return this._entityVerify(entity, and, inputSearch)
@@ -88,7 +88,7 @@ module.exports = class {
 	}
 
 	/** NOT used by list-entities. Returns true if the entity matches the filters provided */
-	_entityVerify (entity, params, inputSearch) {
+	_entityVerify(entity, params, inputSearch) {
 		return params.reduce((valid, param) => {
 			if (!valid)
 				return false
@@ -98,10 +98,12 @@ module.exports = class {
 
 			let attrValue
 
-			if (param.attr === 'genres.name')
-				attrValue = entity.genres.map(g => g.name)
-			else
+			if (entity instanceof Array && param.attr.match(/\./)) {
+				let attr = param.attr.split('.').slice(1).join('.')
+				attrValue = entity.genres.map(g => this._getAttr(attr, entity))
+			} else {
 				attrValue = entity[param.attr]
+			}
 
 			if (param.descriptor.searchSepAnd && inputSearch.match(param.descriptor.searchSepAnd)) {
 				const values = param.value.split(param.descriptor.searchSepAnd)
@@ -120,7 +122,7 @@ module.exports = class {
 	}
 
 	/** NOT used by list-entities. Performs a logical comparison between two values through an operator */
-	_verify (value1, operator, value2) {
+	_verify(value1, operator, value2) {
 		if (value1 instanceof Array) {
 			let cmp = (p, n) => p || n
 			let initc = false
@@ -144,64 +146,144 @@ module.exports = class {
 			operator = '$eq'
 
 		switch (operator) {
-		case '$in': return value1.match(new RegExp(this._scape(value2), 'i'))
-		case '$nin': return !value1.match(new RegExp(this._scape(value2), 'i'))
-		case '$eq': return `${value1}` === `${value2}`
-		case '$neq': return `${value1}` !== `${value2}`
-		case '$sw': return value1.startsWith(value2)
-		case '$nsw': return !value1.startsWith(value2)
-		case '$ew': return value1.endsWith(value2)
-		case '$new': return !value1.endsWith(value2)
-		case '$gt': {
-			if (typeof value1 === 'number' || typeof value2 === 'number') {
-				value1 = parseFloat(value1)
-				value2 = parseFloat(value2)
+			case '$in': return value1.match(new RegExp(this._scape(value2), 'i'))
+			case '$nin': return !value1.match(new RegExp(this._scape(value2), 'i'))
+			case '$eq': return `${value1}` === `${value2}`
+			case '$neq': return `${value1}` !== `${value2}`
+			case '$sw': return value1.startsWith(value2)
+			case '$nsw': return !value1.startsWith(value2)
+			case '$ew': return value1.endsWith(value2)
+			case '$new': return !value1.endsWith(value2)
+			case '$gt': {
+				if (typeof value1 === 'number' || typeof value2 === 'number') {
+					value1 = parseFloat(value1)
+					value2 = parseFloat(value2)
+				}
+
+				if (Object.is(value1, NaN) || Object.is(value2, NaN))
+					return false
+
+				return value1 > value2
 			}
+			case '$gte': {
+				if (typeof value1 === 'number' || typeof value2 === 'number') {
+					value1 = parseFloat(value1)
+					value2 = parseFloat(value2)
+				}
 
-			if (Object.is(value1, NaN) || Object.is(value2, NaN))
-				return false
+				if (Object.is(value1, NaN) || Object.is(value2, NaN))
+					return false
 
-			return value1 > value2
-		}
-		case '$gte': {
-			if (typeof value1 === 'number' || typeof value2 === 'number') {
-				value1 = parseFloat(value1)
-				value2 = parseFloat(value2)
+				return value1 >= value2
 			}
+			case '$lt': {
+				if (typeof value1 === 'number' || typeof value2 === 'number') {
+					value1 = parseFloat(value1)
+					value2 = parseFloat(value2)
+				}
 
-			if (Object.is(value1, NaN) || Object.is(value2, NaN))
-				return false
+				if (Object.is(value1, NaN) || Object.is(value2, NaN))
+					return false
 
-			return value1 >= value2
-		}
-		case '$lt': {
-			if (typeof value1 === 'number' || typeof value2 === 'number') {
-				value1 = parseFloat(value1)
-				value2 = parseFloat(value2)
+				return value1 < value2
 			}
+			case '$lte': {
+				if (typeof value1 === 'number' || typeof value2 === 'number') {
+					value1 = parseFloat(value1)
+					value2 = parseFloat(value2)
+				}
 
-			if (Object.is(value1, NaN) || Object.is(value2, NaN))
-				return false
+				if (Object.is(value1, NaN) || Object.is(value2, NaN))
+					return false
 
-			return value1 < value2
-		}
-		case '$lte': {
-			if (typeof value1 === 'number' || typeof value2 === 'number') {
-				value1 = parseFloat(value1)
-				value2 = parseFloat(value2)
+				return value1 <= value2
 			}
-
-			if (Object.is(value1, NaN) || Object.is(value2, NaN))
-				return false
-
-			return value1 <= value2
-		}
-		default: return false
+			default: return false
 		}
 	}
 
 	/** NOT used by list-entities. Returns string with special regular expression characters with escape */
-	_scape (str) {
+	_scape(str) {
 		return str.replace(/[.*+?^${}()|[]\]/g, '\$&')
+	}
+
+	/**
+	 * NOT used by list-entities
+	 * Gets the value of an object through its path
+	 * @param {string} pathAttr - Attribute path containing desired value
+	 * @param {Object} obj - Object containing desired attribute
+	 * @param {boolean} [searchArray] - If true, the attributes that are array will recursively call this function at each value present in the array and throw the result of each position into another array that will be returned. If false, arrays are considered objects and their positions are considered attributes. Default value: false
+	 * @returns {any} Value of an object through its path
+	 *
+	 * @example
+	 * let obj = {
+	 *     a: {
+	 *         b: 1,
+	 *         c: 2
+	 *     },
+	 *
+	 *     b: [
+	 *         { d: 3, e: 4 },
+	 *         { d: 5, e: 6 },
+	 *         { f: 7, g: 8, z: [{ info: '123' }] }
+	 *     ]
+	 * }
+	 *
+	 * _getAttr('a.b', obj) // 1
+	 * _getAttr('a.c', obj) // 2
+	 * _getAttr('b.2.f', obj) // 7
+	 * _getAttr('b.2.g', obj) // 8
+	 *
+	 * _getAttr('b.d', obj, true) // [3,5,undefined]
+	 * _getAttr('b.e', obj, true) // [4,6,undefined]
+	 * _getAttr('b.z.info', obj, true) // [undefined, undefined, ['123']]
+	 */
+	_getAttr(pathAttr, obj, searchArray = false) {
+		if (!obj) {
+			return obj
+		}
+
+		if (!pathAttr) {
+			return null
+		}
+
+		if (searchArray && obj instanceof Array) {
+			let rt = []
+
+			for (let v of obj) {
+				rt.push(getAttr(pathAttr, v, searchArray))
+			}
+
+			return rt
+		}
+
+		if (pathAttr.match(/\./)) {
+			let pathAttrArray = pathAttr.split('.')
+			let pathRemaning = pathAttrArray.slice(1).join('.')
+			let attr = pathAttrArray[0]
+			let value = obj[attr]
+
+			if (searchArray && value instanceof Array) {
+				let rt = []
+				for (let v of value) {
+					rt.push(getAttr(pathRemaning, v, searchArray))
+				}
+				return rt
+			} else {
+				return getAttr(pathRemaning, value, searchArray)
+			}
+		} else {
+			let value = obj[pathAttr]
+
+			if (searchArray && value instanceof Array) {
+				let rt = []
+				for (let v of value) {
+					rt.push(v)
+				}
+				return rt
+			} else {
+				return value
+			}
+		}
 	}
 }
